@@ -12,12 +12,12 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <grpc.version>1.32.2-SNAPSHOT</grpc.version><!-- CURRENT_GRPC_VERSION -->
+    <grpc.version>1.32.1</grpc.version><!-- CURRENT_GRPC_VERSION -->
     <protobuf.version>3.12.0</protobuf.version>
     <protoc.version>3.12.0</protoc.version>
     <!-- required for jdk9 -->
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
 
   <dependencyManagement>
@@ -40,7 +40,7 @@
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
-      <artifactId>grpc-netty-shaded</artifactId>
+      <artifactId>grpc-netty</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>

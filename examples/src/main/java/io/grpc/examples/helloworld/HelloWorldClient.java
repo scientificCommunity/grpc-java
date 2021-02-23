@@ -135,7 +135,8 @@ public class HelloWorldClient {
                 e.printStackTrace();
             }
         }
-        Thread.currentThread().setDaemon(true);
+        Thread.sleep(10000);
+        //Thread.currentThread().setDaemon(true);
     }
 
     private static void testAsync() throws InterruptedException {

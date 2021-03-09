@@ -46,7 +46,7 @@ public class MyClientResponseObserver implements ClientResponseObserver<HelloReq
             public void run() {
                 // Start generating values from where we left off on a non-gRPC thread.
                 while (requestStream.isReady()) {
-                    String s = "发送" + currentIndex + new String(LargeMessageConstants.BYTES_1024_40);
+                    String s = "发送" + currentIndex + new String(new byte[1024 * 15]);
                     HelloRequest request = HelloRequest.newBuilder().setName(s).build();
                     requestStream.onNext(request);
                     requestStream.onCompleted();

@@ -24,6 +24,8 @@ import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class MyTestManualFlowControlServer {
@@ -88,31 +90,6 @@ public class MyTestManualFlowControlServer {
                             logger.info("<-- " + message);
                             HelloReply reply = HelloReply.newBuilder().setMessage(message).build();
 
-                            // Check the provided ServerCallStreamObserver to see if it is still ready to accept more messages.
-                            if (serverCallStreamObserver.isReady()) {
-                                // Signal the sender to send another request. As long as isReady() stays true, the server will keep
-                                // cycling through the loop of onNext() -> request(1)...onNext() -> request(1)... until the client runs
-                                // out of messages and ends the loop (via onCompleted()).
-                                //
-                                // If request() was called here with the argument of more than 1, the server might runs out of receive
-                                // buffer space, and isReady() will turn false. When the receive buffer has sufficiently drained,
-                                // isReady() will turn true, and the serverCallStreamObserver's onReadyHandler will be called to restart
-                                // the message pump.
-                                serverCallStreamObserver.request(1);
-                            } else {
-                                // If not, note that back-pressure has begun.
-                                onReadyHandler.wasReady = false;
-                            }
-
-                            try {
-                                Thread.sleep(10000);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            //停顿10s再响应，但不影响后面的接收client端数据
-                            //服务端回送的http2数据，默认每一个frame最大大小为16kb
-                            responseObserver.onNext(reply);
-
                             /*// Check the provided ServerCallStreamObserver to see if it is still ready to accept more messages.
                             if (serverCallStreamObserver.isReady()) {
                                 // Signal the sender to send another request. As long as isReady() stays true, the server will keep
@@ -128,6 +105,33 @@ public class MyTestManualFlowControlServer {
                                 // If not, note that back-pressure has begun.
                                 onReadyHandler.wasReady = false;
                             }*/
+                            if (!CRON_STARTED.getAndSet(true)) {
+                                cron.start();
+                            }
+                            try {
+                                Thread.sleep(2000 + CURR_IDX.getAndIncrement() * 1000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            //停顿10s再响应，每次延长一点，检验http2积累缓冲区的时间阈值
+                            //服务端回送的http2数据，默认每一个frame最大大小为16kb
+                            responseObserver.onNext(reply);
+
+                            // Check the provided ServerCallStreamObserver to see if it is still ready to accept more messages.
+                            if (serverCallStreamObserver.isReady()) {
+                                // Signal the sender to send another request. As long as isReady() stays true, the server will keep
+                                // cycling through the loop of onNext() -> request(1)...onNext() -> request(1)... until the client runs
+                                // out of messages and ends the loop (via onCompleted()).
+                                //
+                                // If request() was called here with the argument of more than 1, the server might runs out of receive
+                                // buffer space, and isReady() will turn false. When the receive buffer has sufficiently drained,
+                                // isReady() will turn true, and the serverCallStreamObserver's onReadyHandler will be called to restart
+                                // the message pump.
+                                serverCallStreamObserver.request(1);
+                            } else {
+                                // If not, note that back-pressure has begun.
+                                onReadyHandler.wasReady = false;
+                            }
                         } catch (Throwable throwable) {
                             throwable.printStackTrace();
                             responseObserver.onError(
@@ -174,4 +178,18 @@ public class MyTestManualFlowControlServer {
         });
         server.awaitTermination();
     }
+
+    private static final Thread cron = new Thread(() -> {
+        int i = 1;
+        while (true) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("当前秒数：" + i++);
+        }
+    });
+    private static final AtomicBoolean CRON_STARTED = new AtomicBoolean(false);
+    private static final AtomicInteger CURR_IDX = new AtomicInteger(1);
 }

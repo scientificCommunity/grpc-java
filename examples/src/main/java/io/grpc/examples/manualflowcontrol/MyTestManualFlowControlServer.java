@@ -108,12 +108,12 @@ public class MyTestManualFlowControlServer {
                             if (!CRON_STARTED.getAndSet(true)) {
                                 cron.start();
                             }
-                            try {
-                                Thread.sleep(2000 + CURR_IDX.getAndIncrement() * 1000);
+                            /*try {
+                                Thread.sleep(2000 + CURR_IDX.getAndIncrement() * 2000);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
-                            }
-                            //停顿10s再响应，每次延长一点，检验http2积累缓冲区的时间阈值
+                            }*/
+                            //停顿10s再响应，每次延长一点，检验http2积累tcp缓冲区的时间阈值
                             //服务端回送的http2数据，默认每一个frame最大大小为16kb
                             responseObserver.onNext(reply);
 
